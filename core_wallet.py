@@ -2,6 +2,9 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 from abi import CORE_RPC_URL
 from eth_utils import to_checksum_address
+
+from private import TelegramConfig
+from tg_notify import tg_notify
 from util import get_wallet_address_from_private_key
 
 
@@ -50,5 +53,7 @@ class CoreWallet:
         signed_tx = self.w3.eth.account.sign_transaction(tx, self.private_key)
         tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
         print(f"transfer {self.from_address} => {to_address} {amount} CORE")
+        if TelegramConfig.enable_notify:
+            tg_notify(f"transfer {self.from_address} => {to_address} {amount} CORE")
         return self.w3.to_hex(tx_hash)
 
