@@ -10,7 +10,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 generate_service_file() {
     cat << EOF > /etc/systemd/system/${SERVICE_NAME}.service
 [Unit]
-Description=Niao Bot Service
+Description=${SERVICE_NAME} service
 After=network.target
 
 [Service]
