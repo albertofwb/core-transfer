@@ -1,6 +1,13 @@
 import sys
 from core_wallet import CoreWallet
-from private import private_key
+try:
+    from private import private_key
+except ImportError:
+    with open("private.py", "w") as f:
+        f.write('# 发送钱包的私钥\n')
+        f.write("private_key='xxx'")
+    print("请在 private.py 中填写私钥")
+    sys.exit(1)
 
 
 def main():
