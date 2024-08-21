@@ -18,8 +18,8 @@
 
 1. 克隆此仓库:
    ```
-   git clone https://github.com/yourusername/core-wallet-transfer.git
-   cd core-wallet-transfer
+   git clone git@github.com:albertofwb/core-transfer.git
+   cd core-transfer
    ```
 
 2. 安装依赖:
@@ -49,8 +49,10 @@ python main.py 0x1234567890123456789012345678901234567890 0.1
 
 ## 运行截图
 
+### 命令行转账
 ![转账-运行截图](screenshots/transfer.png)
 
+### 监控钱包地址实时交易
 ![监控-运行截图](screenshots/monitor.png)
 
 ## 错误处理
