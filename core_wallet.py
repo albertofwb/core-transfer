@@ -1,6 +1,6 @@
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-from abi import CORE_RPC_URL
+from abi import CORE_RPC_URL, MIN_GAS_PRICE
 from eth_utils import to_checksum_address
 
 from private import TelegramConfig
@@ -21,14 +21,19 @@ class CoreWallet:
     def is_valid_address(self, address):
         return self.w3.is_address(address)
 
-    def get_core_balance(self, address=None):
+    def get_core_balance(self, address=None) -> float:
         if address is None:
             address = self.from_address
         balance_wei = self.w3.eth.get_balance(address)
         balance = self.w3.from_wei(balance_wei, 'ether')
         # print(f"地址 {address} 的信息:")
         # print(f"Core余额: {balance} CORE")
-        return balance
+        return float(balance)
+
+    def transfer_all(self, to_address):
+        balance = self.get_core_balance()
+        amount = balance - MIN_GAS_PRICE
+        return self.transfer(to_address, amount, False)
 
     def transfer(self, to_address, amount, virify_balance=True):
         if not self.is_valid_address(to_address):
@@ -54,6 +59,6 @@ class CoreWallet:
         tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
         print(f"transfer {self.from_address} => {to_address} {amount} CORE")
         if TelegramConfig.enable_notify:
-            tg_notify(f"transfer {self.from_address} => {to_address} {amount} CORE")
+            tg_notify(f"{self.from_address} {amount} CORE")
         return self.w3.to_hex(tx_hash)
 

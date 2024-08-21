@@ -22,10 +22,10 @@ class Monitor:
             address_map[from_address] = i
         return address_map
 
-    async def transfer(self, private_key, to_address, amount):
+    async def transfer_all(self, private_key, to_address):
         wallet = CoreWallet(private_key)
         loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, wallet.transfer, to_address, amount, False)
+        await loop.run_in_executor(None, wallet.transfer_all, to_address)
 
     async def monitor_transactions(self):
         monitor_addresses = self.private_map_address.keys()
@@ -44,11 +44,10 @@ class Monitor:
                     for tx in block.transactions:
                         if tx['to'] in monitor_addresses:
                             private_key = self.private_map_address[tx['to']]
-                            amount = float(self.w3.from_wei(tx['value'], 'ether')) - MIN_GAS_PRICE
                             try:
-                                await self.transfer(private_key, to_address, amount)
+                                await self.transfer_all(private_key, to_address)
                             except Exception as ex:
-                                print(f"转账失败: {tx['to']} => {to_address} {amount} CORE", ex)
+                                print(f"转账失败: {tx['to']} => {to_address}", ex)
                 last_block = current_block
                 await asyncio.sleep(1)  # Wait for 1 second before checking again
         except KeyboardInterrupt:
