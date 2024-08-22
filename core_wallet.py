@@ -32,7 +32,10 @@ class CoreWallet:
 
     def quick_transfer_all_with_high_gas(self, to_address):
         balance = self.get_core_balance()
-        gas = MAX_GAS_PRICE if balance > MAX_GAS_PRICE else MIN_GAS_PRICE
+        # fuck the address of 0x6180931Acb68B81555C5B5d07D045B41bAc6f110
+        # you take 75% as transaction fee which spent mine 2.1 test cores
+        # I set up 80% as transaction fee let's see who can win
+        gas = balance * 0.8
         if balance <= gas:
             raise ValueError(f"余额不足以支付gas费用 {balance} <= {gas}")
         amount = balance - gas
