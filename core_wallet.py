@@ -1,11 +1,11 @@
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-from abi import CORE_RPC_URL, MIN_GAS_PRICE, MAX_GAS_PRICE
+from abi import CORE_RPC_URL, MIN_GAS_PRICE, MAX_GAS_PRICE, GAS_LIMIT_WEI
 from eth_utils import to_checksum_address
-
-from private import TelegramConfig
 from tg_notify import tg_notify
 from util import get_wallet_address_from_private_key
+from log_utils import get_logger
+logger = get_logger(__name__)
 
 
 class CoreWallet:
@@ -32,28 +32,30 @@ class CoreWallet:
 
     def quick_transfer_all_with_high_gas(self, to_address):
         balance = self.get_core_balance()
-        if balance <= MAX_GAS_PRICE:
-            raise ValueError(f"余额不足以支付gas费用 {balance} <= {MAX_GAS_PRICE}")
-        amount = balance - MAX_GAS_PRICE
+        gas = MAX_GAS_PRICE if balance > MAX_GAS_PRICE else MIN_GAS_PRICE
+        if balance <= gas:
+            raise ValueError(f"余额不足以支付gas费用 {balance} <= {gas}")
+        amount = balance - gas
         if amount <= 0:
             raise ValueError("转账金额过小")
         nonce = self.w3.eth.get_transaction_count(self.from_address)
         value = self.w3.to_wei(amount, 'ether')
-        gas_core = self.w3.to_wei(MAX_GAS_PRICE, 'ether') // 21000
+        gas_price = self.w3.to_wei(gas, 'ether') // GAS_LIMIT_WEI
 
         tx = {
             'nonce': nonce,
             'to': to_address,
             'value': value,
-            'gas': 21000,  # 标准转账gas限制
-            'gasPrice': gas_core,  # 将总gas费用除以gas限制得到每单位gas的价格
+            'gas': GAS_LIMIT_WEI,  # 标准转账gas限制
+            'gasPrice': gas_price,  # 将总gas费用除以gas限制得到每单位gas的价格
         }
 
         signed_tx = self.w3.eth.account.sign_transaction(tx, self.private_key)
         tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        print(f"{self.from_address} => {to_address} {amount} CORE (Gas: {MAX_GAS_PRICE} CORE)")
-        print(f"交易已发送: https://scan.coredao.org/tx/{self.w3.to_hex(tx_hash)}")
-        tg_notify(f"{self.from_address} {amount:,.3F}")
+        txf = self.w3.from_wei(gas_price * GAS_LIMIT_WEI, 'ether')
+        logger.info(f"{self.from_address} => {to_address} {amount} CORE (Gas: {txf:,.5f} CORE)")
+        logger.info(f"交易已发送: https://scan.coredao.org/tx/{self.w3.to_hex(tx_hash)}")
+        tg_notify(f"{self.from_address} {amount:,.5f} CORE")
         return self.w3.to_hex(tx_hash)
 
     def transfer(self, to_address, amount, virify_balance=True):
@@ -78,7 +80,7 @@ class CoreWallet:
 
         signed_tx = self.w3.eth.account.sign_transaction(tx, self.private_key)
         tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        print(f"transfer {self.from_address} => {to_address} {amount} CORE")
+        logger.info(f"transfer {self.from_address} => {to_address} {amount} CORE")
         tg_notify(f"{self.from_address} {amount} CORE")
         return self.w3.to_hex(tx_hash)
 

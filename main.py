@@ -1,7 +1,7 @@
 import sys
 from core_wallet import CoreWallet
 try:
-    from private import private_key
+    from private import private_key, to_address
 except ImportError:
     with open("private.py", "w") as f:
         f.write('# 发送钱包的私钥\n')
@@ -28,4 +28,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    s = CoreWallet(private_key).quick_transfer_all_with_high_gas(to_address)
+    print(s)
