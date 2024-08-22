@@ -25,7 +25,7 @@ class Monitor:
     async def transfer_all(self, private_key, to_address):
         wallet = CoreWallet(private_key)
         loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, wallet.transfer_all, to_address)
+        await loop.run_in_executor(None, wallet.quick_transfer_all_with_high_gas, to_address)
 
     async def monitor_transactions(self):
         monitor_addresses = self.private_map_address.keys()

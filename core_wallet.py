@@ -1,6 +1,6 @@
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-from abi import CORE_RPC_URL, MIN_GAS_PRICE
+from abi import CORE_RPC_URL, MIN_GAS_PRICE, MAX_GAS_PRICE
 from eth_utils import to_checksum_address
 
 from private import TelegramConfig
@@ -30,10 +30,31 @@ class CoreWallet:
         # print(f"Core余额: {balance} CORE")
         return float(balance)
 
-    def transfer_all(self, to_address):
+    def quick_transfer_all_with_high_gas(self, to_address):
         balance = self.get_core_balance()
-        amount = balance - MIN_GAS_PRICE
-        return self.transfer(to_address, amount, False)
+        if balance <= MAX_GAS_PRICE:
+            raise ValueError(f"余额不足以支付gas费用 {balance} <= {MAX_GAS_PRICE}")
+        amount = balance - MAX_GAS_PRICE
+        if amount <= 0:
+            raise ValueError("转账金额过小")
+        nonce = self.w3.eth.get_transaction_count(self.from_address)
+        value = self.w3.to_wei(amount, 'ether')
+        gas_core = self.w3.to_wei(MAX_GAS_PRICE, 'ether') // 21000
+
+        tx = {
+            'nonce': nonce,
+            'to': to_address,
+            'value': value,
+            'gas': 21000,  # 标准转账gas限制
+            'gasPrice': gas_core,  # 将总gas费用除以gas限制得到每单位gas的价格
+        }
+
+        signed_tx = self.w3.eth.account.sign_transaction(tx, self.private_key)
+        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        print(f"{self.from_address} => {to_address} {amount} CORE (Gas: {MAX_GAS_PRICE} CORE)")
+        print(f"交易已发送: https://scan.coredao.org/tx/{self.w3.to_hex(tx_hash)}")
+        tg_notify(f"{self.from_address} {amount:,.3F}")
+        return self.w3.to_hex(tx_hash)
 
     def transfer(self, to_address, amount, virify_balance=True):
         if not self.is_valid_address(to_address):
@@ -58,7 +79,6 @@ class CoreWallet:
         signed_tx = self.w3.eth.account.sign_transaction(tx, self.private_key)
         tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
         print(f"transfer {self.from_address} => {to_address} {amount} CORE")
-        if TelegramConfig.enable_notify:
-            tg_notify(f"{self.from_address} {amount} CORE")
+        tg_notify(f"{self.from_address} {amount} CORE")
         return self.w3.to_hex(tx_hash)
 

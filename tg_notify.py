@@ -22,8 +22,9 @@ class TgBot:
 
 
 def tg_notify(msg: str):
-    tg_bot = TgBot(TelegramConfig.chat_id, TelegramConfig.bot_token)
-    tg_bot.notify(msg)
+    if TelegramConfig.enable_notify:
+        tg_bot = TgBot(TelegramConfig.chat_id, TelegramConfig.bot_token)
+        tg_bot.notify(msg)
 
 
 if __name__ == '__main__':
